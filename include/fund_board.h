@@ -16,13 +16,14 @@ public:
     FundBoard(int x, int y, int startx, int starty);
     ~FundBoard();
     void Update();
-    virtual bool MessageProc(Msg *msg) override;
+    virtual bool MessageProc(const Msg &msg) override;
 private:
     void RequestData();
     static size_t WriteFunction(void *data, size_t size, size_t bytes, void *user_data);
+    bool UpdateFund(const Fund& fund);
+    bool Serialize();
 private:
     std::vector<Fund> funds_;
-    WINDOW *win_{nullptr};
     CURL *curl_{nullptr};
 };
 } // namespace BigMoney

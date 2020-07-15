@@ -8,6 +8,9 @@ namespace BigMoney {
 
 enum MsgType {
     kFundRequestFinished = 0,
+    kUpdateFund,
+    kPaint,
+    kQuit,
 };
 
 struct Msg {
@@ -29,8 +32,12 @@ private:
 
 class MsgReactor {
 public:
-    virtual bool MessageProc(Msg *msg) = 0;
+    MsgReactor();
+    virtual ~MsgReactor();
+    virtual bool MessageProc(const Msg &msg) = 0;
     bool PostMessage(const Msg &msg);
     bool GetMessage(Msg *msg);
 };
+
+void StartMainLoop();
 } // namespace BigMoney

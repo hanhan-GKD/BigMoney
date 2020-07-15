@@ -1,32 +1,27 @@
 #include <stdio.h>
 #include <ncurses.h>
+#include "command_bar.h"
+#include <locale.h>
+#include "fund_board.h"
+#include "msg.h"
+#include "status_bar.h"
 
+using namespace BigMoney;
 
-int main()
-{	int ch;
+int main() {
+	setlocale(LC_ALL, "");
+	int ch;
 
 	initscr();			/* Start curses mode 		*/
 	raw();				/* Line buffering disabled	*/
 	keypad(stdscr, TRUE);		/* We get F1, F2 etc..		*/
-	noecho();			/* Don't echo() while we do getch */
-
-    	printw("Type any character to see it in bold\n");
-	ch = getch();			/* If raw() hadn't been called
-					 * we have to press enter before it
-					 * gets to the program 		*/
-	if(ch == KEY_F(1))		/* Without keypad enabled this will */
-		printw("F1 Key pressed");/*  not get to us either	*/
-					/* Without noecho() some ugly escape
-					 * charachters might have been printed
-					 * on screen			*/
-	else
-	{	printw("The pressed key is ");
-		attron(A_BOLD);
-		printw("%c", ch);
-		attroff(A_BOLD);
-	}
-	refresh();			/* Print it on to the real screen */
-    	getch();			/* Wait for user input */
+	curs_set(0);
+	cbreak();
+	FundBoard fundboard(200, 20, 0, 40);
+	StatusBar sbar(200, 10, 0, 0);
+	BigMoney::CommandBar bar(200, 20, 0, 20);
+	bar.GetCommand();
+	StartMainLoop();
 	endwin();			/* End curses mode		  */
 
 	return 0;

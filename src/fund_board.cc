@@ -1,6 +1,8 @@
 #include "fund_board.h"
 #include <rapidjson/rapidjson.h>
 #include <rapidjson/document.h>
+#include <rapidjson/filewritestream.h>
+#include <rapidjson/prettywriter.h>
 #include "util.h"
 
 using namespace rapidjson;
@@ -15,10 +17,8 @@ size_t FundBoard::WriteFunction(void *data, size_t size, size_t bytes, void *use
 
 FundBoard::FundBoard(int x, int y, int startx, int starty)
     : Window(x, y, startx, starty) {
-
     curl_global_init(CURL_GLOBAL_DEFAULT);
     curl_ = curl_easy_init();
-    win_ = newwin(100, 100, 100, 100);
     wborder(win_, '|', '|', '-', '-', '+', '+', '+', '+');
     wrefresh(win_);
 }
@@ -27,9 +27,7 @@ FundBoard::~FundBoard() {
     if (curl_) {
         curl_easy_cleanup(curl_);
     }
-    if (win_) {
-        delwin(win_);
-    }
+
     curl_global_cleanup();
 }
 
@@ -80,21 +78,74 @@ void FundBoard::RequestData() {
     PostMessage(msg);
 }
 
+bool FundBoard::UpdateFund(const Fund& fund) {
+    bool changed = false;
+    if (fund.fund_code == -1) {
+        return changed;
+    }
+    auto itr = funds_.begin();
+    while(itr != funds_.end()) {
+        if (itr->fund_code == fund.fund_code) {
+            *itr = fund;
+            changed = true;
+        }
+    }
+    if (itr == funds_.end()) {
+        changed = true;
+        funds_.push_back(fund);
+    }
+    if (changed) {
+        Serialize();
+    }
+    return changed;
+}
+
 void FundBoard::Update() {
     wrefresh(win_);
 }
+bool FundBoard::Serialize() {
+    if (funds_.empty()) {
+        return false;
+    }
+    FILE *fp = fopen("fund.json", "wb");
+    std::array<char, 65535> write_buffer;
+    FileWriteStream ws(fp, write_buffer.data(), write_buffer.size());
+    PrettyWriter<FileWriteStream> writer(ws);
+    writer.StartArray();
+    for (auto &fund : funds_) {
+        writer.StartObject();
+        writer.Key("fund_code");
+        writer.Int(fund.fund_code);
+        writer.Key("fund_name");
+        writer.String(fund.fund_name.c_str());
+        writer.Key("fund_last_update");
+        writer.String(fund.last_update_time.c_str());
+        writer.Key("fund_share");
+        writer.Double(fund.share);
+        writer.EndObject();
+    }
+    writer.EndArray();
+    fclose(fp);
+}
 
-bool FundBoard::MessageProc(Msg *msg) {
-    bool processed = true;
-    switch(msg->msg_type) {
+bool FundBoard::MessageProc(const Msg &msg) {
+    switch(msg.msg_type) {
         case kFundRequestFinished:
             Update();
             break;
+        case kUpdateFund: {
+            Fund *fund = reinterpret_cast<Fund *>(msg.data);
+            // update fund fail
+            if (!UpdateFund(*fund)) {
+            }
+            delete fund;
+        }
+        case kQuit:
+            break;
         default:
-            processed = false;
             break;
     }
-    return processed;
+    return Window::MessageProc(msg);
 }
 
 } // namespace BigMoney
