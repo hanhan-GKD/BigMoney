@@ -5,7 +5,7 @@
 
 namespace BigMoney {
 struct Fund {
-    int32_t fund_code{-1};
+    std::string fund_code;
     float fund_worth{0.0f}; 
     float valuation{0.0f};
     float fluctuations{0.0f};

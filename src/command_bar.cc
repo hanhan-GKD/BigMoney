@@ -31,10 +31,10 @@ void CommandBar::ParseCommand(const std::string &cmd) {
     std::string action;
     is >> action;
     if (action == "add" || action == "update") {
-        int fund_id = -1;
+        std::string fund_id;
         float fund_share = 0;
         is >> fund_id >> fund_share;
-        if (fund_id != -1) {
+        if (!fund_id.empty()) {
             Fund *fund = new Fund();
             fund->fund_code = fund_id;
             fund->share = fund_share;
@@ -42,8 +42,10 @@ void CommandBar::ParseCommand(const std::string &cmd) {
             PostMessage(msg);
         }
     } else if (action == "delete") {
-        int fund_id = -1;
-        is >> fund_id;
+        std::string *fund_id = new std::string();
+        is >> *fund_id;
+        Msg msg{kDeleteFund, fund_id, fund_id->size()};
+        PostMessage(msg);
     } else if (action == "info") {
     } else if (action == "quit") {
         Msg msg = {kQuit, nullptr};

@@ -9,5 +9,6 @@ public:
     void Paint() override;
     bool MessageProc(const Msg &msg) override;
 private:
+    std::string show_msg_;
 };
 } // namespace BigMoney

@@ -1,5 +1,6 @@
 #pragma once
 #include <cassert>
+#include <sstream>
 
 #define JSON_GET(type, key, v, json)\
     do {\
@@ -14,5 +15,13 @@
         assert(0 && "Cannot find key, get json value fail: "#key);\
     }\
     }while (0)
-    
-    
+
+#include <string>
+
+#define FUND_DATA_URL "http://fundgz.1234567.com.cn/js/"
+
+inline std::string GenerateFundUrl(const std::string& code) {
+    std::ostringstream os;
+    os << FUND_DATA_URL << code << ".js";
+    return os.str();
+}

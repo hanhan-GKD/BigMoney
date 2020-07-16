@@ -22,7 +22,7 @@ bool MsgQueue::Dequeue(Msg *msg) {
     if (msg_queue_.empty()) {
         return false;
     }
-    *msg = msg_queue_.back();
+    *msg = msg_queue_.front();
     msg_queue_.pop();
     return true;
 }

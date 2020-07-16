@@ -22,14 +22,10 @@ public:
         return false;
     }
     void Update() {
-        Msg msg;
-        msg.msg_type = kPaint;
-        msg.data = static_cast<void*>(this);
+        Msg msg{kPaint, static_cast<void*>(this), 0};
         PostMessage(msg);
     }
-    virtual void Paint() {
-
-    };
+    virtual void Paint() { };
     virtual ~Window() {
         if (win_) {
             delwin(win_);

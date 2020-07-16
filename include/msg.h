@@ -7,8 +7,8 @@
 namespace BigMoney {
 
 enum MsgType {
-    kFundRequestFinished = 0,
     kUpdateFund,
+    kDeleteFund,
     kPaint,
     kQuit,
 };
