@@ -1,8 +1,8 @@
 #include "command_bar.h"
 #include <thread>
-#include <regex>
 #include <sstream>
 #include "fund.h"
+#include <array>
 
 namespace BigMoney {
 CommandBar::CommandBar(int x, int y, int startx, int starty) 

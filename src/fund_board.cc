@@ -15,14 +15,14 @@ namespace BigMoney {
 // compute content 
 const std::array<std::pair<std::string, int>, 8> FundBoard::FIELD_WIDTH_MAP = {
         std::make_pair("编号", StringWidth("编号")),
-        {"名称", StringWidth("名称")},
-        {"净值", StringWidth("净值")},
-        {"估值", StringWidth("估值")},
-        {"份额", StringWidth("份额")},
-        {"增长率", StringWidth("增长率")},
-        {"预计收益", StringWidth("预计收益")},
-        {"更新时间", StringWidth("更新时间")}
-    };
+        std::make_pair("名称", StringWidth("名称")),
+        std::make_pair("净值", StringWidth("净值")),
+        std::make_pair("估值", StringWidth("估值")),
+        std::make_pair("份额", StringWidth("份额")),
+        std::make_pair("增长率", StringWidth("增长率")),
+        std::make_pair("预计收益", StringWidth("预计收益")),
+        std::make_pair("更新时间", StringWidth("更新时间"))
+ };
 
 size_t FundBoard::WriteFunction(void *data, size_t size, size_t bytes, void *user_data) {
     size_t all_bytes = size * bytes;
@@ -35,9 +35,9 @@ FundBoard::FundBoard(int x, int y, int startx, int starty)
     : Window(x, y, startx, starty) {
     curl_global_init(CURL_GLOBAL_DEFAULT);
     curl_ = curl_easy_init();
-
     LoadFundFromFile();
-    timer.Start(30000, std::bind(&FundBoard::GetFundData, this));
+    timer = new Timer(std::bind(&FundBoard::GetFundData, this));
+    timer->Start(30000);
 }
 void FundBoard::LoadFundFromFile() {
     FILE *fp = fopen("fund.json", "rb");
@@ -64,7 +64,10 @@ void FundBoard::LoadFundFromFile() {
 }
 
 FundBoard::~FundBoard() {
-    timer.Stop();
+    if (timer) {
+        timer->Stop();
+        delete timer;
+    }
     if (curl_) {
         curl_easy_cleanup(curl_);
     }
@@ -202,6 +205,7 @@ void FundBoard::Paint() {
         mvwprintw(win_, 0, x_offset, _TEXT(field.first.c_str()));
         x_offset += field.second + 2;
     }
+    mvwhline(win_, ++y_offset, 0, '-', x_);
     // compute float value format
     std::array<std::string, 5> format_table;
     std::array<char, 30> format_buffer;
@@ -213,9 +217,9 @@ void FundBoard::Paint() {
     for(auto &fund: funds_) {
         x_offset = 0;
         y_offset ++;
-        mvwprintw(win_, y_offset, x_offset, _TEXT(fund.fund_code.c_str()));
+        mvwprintw(win_, y_offset, x_offset, fund.fund_code.c_str());
         x_offset += field_width_map[0].second + 2;
-        mvwprintw(win_, y_offset, x_offset, fund.fund_name.c_str());
+        mvwprintw(win_, y_offset, x_offset, _TEXT(fund.fund_name.c_str()));
         x_offset += field_width_map[1].second + 2;
         mvwprintw(win_, y_offset, x_offset, format_table[0].c_str(), fund.fund_worth);
         x_offset += field_width_map[2].second + 2;
@@ -225,7 +229,7 @@ void FundBoard::Paint() {
         x_offset += field_width_map[4].second + 2;
         if (fund.fluctuations > 0) {
             wattron(win_, GetColorPair(kRedBlack));
-        } else {
+        } else if (fund.fluctuations < 0){
             wattron(win_, GetColorPair(kGreenBlack));
         }
         mvwprintw(win_, y_offset, x_offset, format_table[3].c_str(), fund.fluctuations);
@@ -234,7 +238,7 @@ void FundBoard::Paint() {
         x_offset += field_width_map[6].second + 2;
         if (fund.fluctuations > 0) {
             wattroff(win_, GetColorPair(kRedBlack));
-        } else {
+        } else if(fund.fluctuations < 0){
             wattroff(win_, GetColorPair(kGreenBlack));
         }
 
@@ -263,6 +267,7 @@ bool FundBoard::Serialize() {
     }
     writer.EndArray();
     fclose(fp);
+    return true;
 }
 
 bool FundBoard::MessageProc(const Msg &msg) {

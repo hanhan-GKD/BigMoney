@@ -3,6 +3,8 @@
 #include <queue>
 #include <memory>
 #include <mutex>
+#include <singleton.h>
+#include <unordered_set>
 
 namespace BigMoney {
 
@@ -35,6 +37,26 @@ public:
     MsgReactor();
     virtual ~MsgReactor();
     virtual bool MessageProc(const Msg &msg) = 0;
+};
+
+class MsgManager : public sy::Singleton<MsgManager> {
+public:
+    inline bool Enqueue(const Msg& msg) {
+        return msg_queue_.Enqueue(msg);
+    }
+    inline bool Dequeue(Msg *msg) {
+        return msg_queue_.Dequeue(msg);
+    }
+    inline bool QueueEmpty() {
+        return msg_queue_.Empty();
+    }
+    void AddReactor(MsgReactor *reactor);
+    void RemoveReactor(MsgReactor *reactor); 
+    void StartMainLoop();
+private:
+    MsgQueue msg_queue_;
+    std::unordered_set<MsgReactor*> reactors_;
+    std::mutex reactors_mutex_;
 };
 
 bool GetMsg(Msg *msg);

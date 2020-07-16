@@ -12,6 +12,7 @@ if (WIN32 OR MSVC)
     add_dependencies(big_money libcurl)
     target_include_directories(big_money PUBLIC ${CMAKE_CURRENT_SOUREC_DIR}/include/pdcurses)
     target_link_libraries(big_money pdcurses libcurl)
+    add_definitions(-DNOMINMAX)
 else()
     message(STATUS "Build big_money on *nix system")
     set(CURSES_NEED_NCURSES TRUE)
@@ -28,4 +29,5 @@ endif()
 target_include_directories(big_money PRIVATE 
                         ${CMAKE_CURRENT_SOURCE_DIR}/include
                         ${CMAKE_CURRENT_SOURCE_DIR}/3rd/rapidjson/include
+                        ${CMAKE_CURRENT_SOURCE_DIR}/3rd/csylib/
 )

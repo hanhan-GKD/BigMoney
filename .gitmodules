@@ -4,3 +4,6 @@
 [submodule "3rd/curl"]
 	path = 3rd/curl
 	url = https://github.com/curl/curl.git
+[submodule "3rd/csylib"]
+	path = 3rd/csylib
+	url = https://github.com/geniusC/csylib.git

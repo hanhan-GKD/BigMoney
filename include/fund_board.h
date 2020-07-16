@@ -1,10 +1,10 @@
 #pragma once
 
+#include "port.h"
 #include "fund.h"
 #include <vector>
 #include <utility>
 #include <curl/curl.h>
-#include "port.h"
 #include "msg.h"
 #include "win.h"
 #include <mutex>
@@ -29,6 +29,6 @@ private:
     std::vector<Fund> funds_;
     CURL *curl_{nullptr};
     std::mutex fund_mutex_;
-    Timer timer;
+    Timer *timer{nullptr};
 };
 } // namespace BigMoney

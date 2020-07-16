@@ -1,6 +1,7 @@
 #include "util.h"
 #include <array>
 #include <string.h>
+#include "port.h"
 
 int StringWidth(const std::string &str) {
     int width = 0;
@@ -33,18 +34,17 @@ int FloatWidth(float f) {
 
 
 #ifdef _WIN32
-
+#include <windows.h>
 std::string UTF8ToANSI(const std::string &str) {
     BSTR bstr;
     char *psz = nullptr;
     int length;
-    const char *psz = str.c_str();
     char * utf8_str = nullptr;
 
-    length = MultiByteToWideChar(CP_UTF8, 0, psz, strlen(psz) + 1, nullptr, nullptr);
+    length = MultiByteToWideChar(CP_UTF8, 0, str.c_str(), str.size(), nullptr, 0);
     bstr = SysAllocStringLen(nullptr, length);
 
-    MultiByteToWideChar(CP_UTF8, 0, psz, strlen(psz) + 1, bstr, length);
+    MultiByteToWideChar(CP_UTF8, 0, str.c_str(), str.size(), bstr, length);
 
     length = WideCharToMultiByte(CP_ACP, 0, bstr, -1, nullptr, 0, nullptr, nullptr);
     utf8_str = new char[length];
@@ -53,7 +53,7 @@ std::string UTF8ToANSI(const std::string &str) {
     SysFreeString(bstr);
 
     std::string ret(utf8_str);
-    delete[] pszAnsi;
+    delete[] utf8_str;
     return ret;
 }
 
