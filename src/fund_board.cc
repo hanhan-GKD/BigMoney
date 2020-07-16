@@ -7,6 +7,7 @@
 #include <array>
 #include "util.h"
 #include "timer.h"
+#include "colors.h"
 
 using namespace rapidjson;
 namespace BigMoney {
@@ -198,7 +199,7 @@ void FundBoard::Paint() {
         field_width_map[7].second = std::max(field_width_map[7].second, width);
     }
     for (auto &field : field_width_map) {
-        mvwprintw(win_, 0, x_offset, field.first.c_str());
+        mvwprintw(win_, 0, x_offset, _TEXT(field.first.c_str()));
         x_offset += field.second + 2;
     }
     // compute float value format
@@ -212,7 +213,7 @@ void FundBoard::Paint() {
     for(auto &fund: funds_) {
         x_offset = 0;
         y_offset ++;
-        mvwprintw(win_, y_offset, x_offset, fund.fund_code.c_str());
+        mvwprintw(win_, y_offset, x_offset, _TEXT(fund.fund_code.c_str()));
         x_offset += field_width_map[0].second + 2;
         mvwprintw(win_, y_offset, x_offset, fund.fund_name.c_str());
         x_offset += field_width_map[1].second + 2;
@@ -222,10 +223,21 @@ void FundBoard::Paint() {
         x_offset += field_width_map[3].second + 2;
         mvwprintw(win_, y_offset, x_offset, format_table[2].c_str(), fund.share);
         x_offset += field_width_map[4].second + 2;
+        if (fund.fluctuations > 0) {
+            wattron(win_, GetColorPair(kRedBlack));
+        } else {
+            wattron(win_, GetColorPair(kGreenBlack));
+        }
         mvwprintw(win_, y_offset, x_offset, format_table[3].c_str(), fund.fluctuations);
         x_offset += field_width_map[5].second + 2;
         mvwprintw(win_, y_offset, x_offset, format_table[4].c_str(), fund.share * (fund.valuation - fund.fund_worth));
         x_offset += field_width_map[6].second + 2;
+        if (fund.fluctuations > 0) {
+            wattroff(win_, GetColorPair(kRedBlack));
+        } else {
+            wattroff(win_, GetColorPair(kGreenBlack));
+        }
+
         mvwprintw(win_, y_offset, x_offset, fund.last_update_time.c_str());
     }
     wrefresh(win_);
