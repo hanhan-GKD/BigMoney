@@ -4,11 +4,24 @@
 #include <rapidjson/filewritestream.h>
 #include <rapidjson/filereadstream.h>
 #include <rapidjson/prettywriter.h>
+#include <array>
 #include "util.h"
 #include "timer.h"
 
 using namespace rapidjson;
 namespace BigMoney {
+
+// compute content 
+const std::array<std::pair<std::string, int>, 8> FundBoard::FIELD_WIDTH_MAP = {
+        std::make_pair("编号", StringWidth("编号")),
+        {"名称", StringWidth("名称")},
+        {"净值", StringWidth("净值")},
+        {"估值", StringWidth("估值")},
+        {"份额", StringWidth("份额")},
+        {"增长率", StringWidth("增长率")},
+        {"预计收益", StringWidth("预计收益")},
+        {"更新时间", StringWidth("更新时间")}
+    };
 
 size_t FundBoard::WriteFunction(void *data, size_t size, size_t bytes, void *user_data) {
     size_t all_bytes = size * bytes;
@@ -21,17 +34,7 @@ FundBoard::FundBoard(int x, int y, int startx, int starty)
     : Window(x, y, startx, starty) {
     curl_global_init(CURL_GLOBAL_DEFAULT);
     curl_ = curl_easy_init();
-    // compute content width percent
-    field_width_map_ = {
-        std::make_pair("编号", x * 0.1),
-        {"名称", x * 0.3},
-        {"净值", x * 0.1},
-        {"估值", x * 0.1},
-        {"份额", x * 0.1},
-        {"增长率", x * 0.1},
-        {"预计收益", x * 0.1},
-        {"更新时间", x * 0.1}
-    };
+
     LoadFundFromFile();
     timer.Start(30000, std::bind(&FundBoard::GetFundData, this));
 }
@@ -173,29 +176,56 @@ bool FundBoard::DeleteFund(const std::string &fund_code) {
 
 void FundBoard::Paint() {
     wclear(win_);
-    int x_offset = 1, y_offset = 1;
-    for (auto &field : field_width_map_) {
-        mvwprintw(win_, 1, x_offset, field.first.c_str());
-        x_offset += field.second;
-    }
+    int x_offset = 0, y_offset = 0;
+    auto field_width_map = FIELD_WIDTH_MAP;
     std::lock_guard<std::mutex> lock(fund_mutex_);
     for(auto &fund: funds_) {
-        x_offset = 1;
+        int width = StringWidth(fund.fund_code);
+        field_width_map[0].second = std::max(field_width_map[0].second, width);
+        width = StringWidth(fund.fund_name);
+        field_width_map[1].second = std::max(field_width_map[1].second, width);
+        width = FloatWidth(fund.fund_worth);
+        field_width_map[2].second = std::max(field_width_map[2].second, width);
+        width = FloatWidth(fund.valuation);
+        field_width_map[3].second = std::max(field_width_map[3].second, width);
+        width = FloatWidth(fund.share);
+        field_width_map[4].second = std::max(field_width_map[4].second, width);
+        width = FloatWidth(fund.fluctuations);
+        field_width_map[5].second = std::max(field_width_map[5].second, width);
+        width = FloatWidth(fund.share * (fund.valuation - fund.fund_worth) * 1.0);
+        field_width_map[6].second = std::max(field_width_map[6].second, width);
+        width = StringWidth(fund.last_update_time);
+        field_width_map[7].second = std::max(field_width_map[7].second, width);
+    }
+    for (auto &field : field_width_map) {
+        mvwprintw(win_, 0, x_offset, field.first.c_str());
+        x_offset += field.second + 2;
+    }
+    // compute float value format
+    std::array<std::string, 5> format_table;
+    std::array<char, 30> format_buffer;
+    for (size_t i = 2, j = 0; i < 7; i ++, j ++) {
+        memset(format_buffer.data(), 0, format_buffer.size());
+        snprintf(format_buffer.data(), format_buffer.size(), "%%%d.2f", field_width_map[i].second);
+        format_table[j] = std::string(format_buffer.data());
+    }
+    for(auto &fund: funds_) {
+        x_offset = 0;
         y_offset ++;
         mvwprintw(win_, y_offset, x_offset, fund.fund_code.c_str());
-        x_offset += field_width_map_[0].second;
+        x_offset += field_width_map[0].second + 2;
         mvwprintw(win_, y_offset, x_offset, fund.fund_name.c_str());
-        x_offset += field_width_map_[1].second;
-        mvwprintw(win_, y_offset, x_offset, "%.2f", fund.fund_worth);
-        x_offset += field_width_map_[2].second;
-        mvwprintw(win_, y_offset, x_offset, "%.2f", fund.valuation);
-        x_offset += field_width_map_[3].second;
-        mvwprintw(win_, y_offset, x_offset, "%.2f", fund.share);
-        x_offset += field_width_map_[4].second;
-        mvwprintw(win_, y_offset, x_offset, "%.2f", fund.fluctuations);
-        x_offset += field_width_map_[5].second;
-        mvwprintw(win_, y_offset, x_offset, "%.2f", fund.share * (fund.valuation - fund.fund_worth));
-        x_offset += field_width_map_[6].second;
+        x_offset += field_width_map[1].second + 2;
+        mvwprintw(win_, y_offset, x_offset, format_table[0].c_str(), fund.fund_worth);
+        x_offset += field_width_map[2].second + 2;
+        mvwprintw(win_, y_offset, x_offset, format_table[1].c_str(), fund.valuation);
+        x_offset += field_width_map[3].second + 2;
+        mvwprintw(win_, y_offset, x_offset, format_table[2].c_str(), fund.share);
+        x_offset += field_width_map[4].second + 2;
+        mvwprintw(win_, y_offset, x_offset, format_table[3].c_str(), fund.fluctuations);
+        x_offset += field_width_map[5].second + 2;
+        mvwprintw(win_, y_offset, x_offset, format_table[4].c_str(), fund.share * (fund.valuation - fund.fund_worth));
+        x_offset += field_width_map[6].second + 2;
         mvwprintw(win_, y_offset, x_offset, fund.last_update_time.c_str());
     }
     wrefresh(win_);

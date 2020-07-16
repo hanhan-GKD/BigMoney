@@ -21,7 +21,12 @@ public:
         });
     }
     void Stop() {
-        running_ = false;
+        if (running_) {
+            running_ = false;
+            if (wait_thread_.joinable()) {
+                wait_thread_.join();
+            }
+        }
     }
 private:
     std::thread wait_thread_;

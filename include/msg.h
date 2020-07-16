@@ -35,9 +35,9 @@ public:
     MsgReactor();
     virtual ~MsgReactor();
     virtual bool MessageProc(const Msg &msg) = 0;
-    bool PostMessage(const Msg &msg);
-    bool GetMessage(Msg *msg);
 };
 
+bool GetMsg(Msg *msg);
+bool PostMsg(const Msg &msg);
 void StartMainLoop();
 } // namespace BigMoney

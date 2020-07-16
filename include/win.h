@@ -23,7 +23,7 @@ public:
     }
     void Update() {
         Msg msg{kPaint, static_cast<void*>(this), 0};
-        PostMessage(msg);
+        PostMsg(msg);
     }
     virtual void Paint() { };
     virtual ~Window() {

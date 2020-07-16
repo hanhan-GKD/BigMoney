@@ -42,14 +42,15 @@ MsgReactor::~MsgReactor() {
 }
 
 
-bool MsgReactor::PostMessage(const Msg &msg) {
-    return msg_queue.Enqueue(msg);
-}
-bool MsgReactor::GetMessage(Msg *msg) {
+bool GetMsg(Msg *msg) {
     if (msg_queue.Empty()) {
         return false;
     }
     return msg_queue.Dequeue(msg);
+}
+
+bool PostMsg(const Msg &msg) {
+    return msg_queue.Enqueue(msg);
 }
 
 void StartMainLoop() {

@@ -39,18 +39,18 @@ void CommandBar::ParseCommand(const std::string &cmd) {
             fund->fund_code = fund_id;
             fund->share = fund_share;
             Msg msg = {kUpdateFund, fund};
-            PostMessage(msg);
+            PostMsg(msg);
         }
     } else if (action == "delete") {
         std::string *fund_id = new std::string();
         is >> *fund_id;
-        Msg msg{kDeleteFund, fund_id, fund_id->size()};
-        PostMessage(msg);
+        Msg msg{kDeleteFund, fund_id};
+        PostMsg(msg);
     } else if (action == "info") {
     } else if (action == "quit") {
         Msg msg = {kQuit, nullptr};
         is_listen_ = false;
-        PostMessage(msg);
+        PostMsg(msg);
     }
 }
 

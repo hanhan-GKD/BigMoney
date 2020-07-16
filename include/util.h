@@ -18,6 +18,9 @@
 
 #include <string>
 
+std::string UTF8ToANSI(const std::string &str);
+
+
 #define FUND_DATA_URL "http://fundgz.1234567.com.cn/js/"
 
 inline std::string GenerateFundUrl(const std::string& code) {
@@ -25,3 +28,7 @@ inline std::string GenerateFundUrl(const std::string& code) {
     os << FUND_DATA_URL << code << ".js";
     return os.str();
 }
+
+int StringWidth(const std::string &str) ;
+
+int FloatWidth(float f);
