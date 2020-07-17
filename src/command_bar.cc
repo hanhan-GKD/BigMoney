@@ -27,6 +27,9 @@ void CommandBar::GetCommand() {
 }
 
 void CommandBar::ParseCommand(const std::string &cmd) {
+    if (cmd.empty()) {
+        return;
+    }
     std::istringstream is(cmd);
     std::string action;
     is >> action;
@@ -34,7 +37,7 @@ void CommandBar::ParseCommand(const std::string &cmd) {
         std::string fund_id;
         float fund_share = 0;
         is >> fund_id >> fund_share;
-        if (!fund_id.empty()) {
+        if (IsNumber(fund_id)) {
             Fund *fund = new Fund();
             fund->fund_code = fund_id;
             fund->share = fund_share;
@@ -44,13 +47,17 @@ void CommandBar::ParseCommand(const std::string &cmd) {
     } else if (action == "delete") {
         std::string *fund_id = new std::string();
         is >> *fund_id;
-        Msg msg{kDeleteFund, fund_id};
-        PostMsg(msg);
+        if (IsNumber(fund_id->c_str())) {
+            Msg msg{kDeleteFund, fund_id};
+            PostMsg(msg);
+        }
     } else if (action == "info") {
     } else if (action == "quit") {
         Msg msg = {kQuit, nullptr};
         is_listen_ = false;
         PostMsg(msg);
+    } else {
+        UPDATE_STATUS("无效命令: %s", cmd.c_str());
     }
 }
 

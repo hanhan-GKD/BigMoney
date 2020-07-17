@@ -3,6 +3,7 @@
 #include <string.h>
 #include "port.h"
 
+
 int StringWidth(const std::string &str) {
     int width = 0;
     for (size_t i = 0; i < str.size();){

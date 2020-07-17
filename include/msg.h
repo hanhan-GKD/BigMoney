@@ -11,14 +11,16 @@ namespace BigMoney {
 enum MsgType {
     kUpdateFund,
     kDeleteFund,
+    kUpdateIncome,
+    kUpdateStatus,
     kPaint,
     kQuit,
 };
 
 struct Msg {
     MsgType msg_type;
-    void *data;
-    uint16_t data_size;
+    void *lparam;
+    void *rparam;
 };
 
 class MsgQueue {
