@@ -1,9 +1,13 @@
 # 投资有风险 入市需谨慎
 
+![sample](./1594979779.jpg)
 ### 编译
 
 ```
-git clone https://github.com/geniusC/BigMoney.git
+git clone https://github.com/geniusC/BigMoney.git 
+cd big_money
+git submodule init 
+git submoduel udpate
 mkdir build
 cd build
 cmake ../BigMoney
