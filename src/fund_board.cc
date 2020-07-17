@@ -86,7 +86,7 @@ void FundBoard::GetFundData() {
         if (curl_code == CURLE_OK) {
             if (http_response.empty()) {
                 // empty resposne
-                printf("Resposne is empty\n");
+                UPDATE_STATUS("请求失败, 基金: %s", fund.fund_code.c_str());
                 continue;
             } else {
                 Document doc;
@@ -95,16 +95,16 @@ void FundBoard::GetFundData() {
                 http_response[http_response.find_last_of(")")]= 0;
                 size_t begin_offset = http_response.find("{");
                 if(doc.Parse(http_response.c_str() + begin_offset).HasParseError()) {
-                    printf("Parse response error\n");
+                    UPDATE_STATUS("解析数据失败, 基金: %s", fund.fund_code.c_str());
                     continue;
                 }
                 if (!doc.IsObject()) {
-                    printf("Invalid reponse data, %s\n", http_response.c_str());
+                    UPDATE_STATUS("数据格式无效, 基金: %s", fund.fund_code.c_str());
                 }
                 std::string fund_code;
                 JSON_GET(String, "fundcode", fund_code, doc);
                 if (fund_code != fund.fund_code) {
-                    printf("Reponse fund code mismatch\n");
+                    UPDATE_STATUS("Reponse fund code mismatch\n");
                 }
                 std::string valuation;
                 JSON_GET(String, "gsz", valuation, doc);
@@ -117,17 +117,31 @@ void FundBoard::GetFundData() {
                 std::string dwjz;
                 JSON_GET(String, "dwjz", dwjz, doc);
                 fund.fund_worth = std::atof(dwjz.c_str());
+                if (fund.share > 0) {
+                    fund.income = fund.share * (fund.valuation - fund.fund_worth);
+                }
 
                 JSON_GET(String, "name", fund.fund_name, doc);
                 JSON_GET(String, "gztime", fund.last_update_time, doc);
 
             }
         } else {
-            printf("Network request error: %s", curl_easy_strerror(curl_code));
+            UPDATE_STATUS("网络请求出现错误");
         }
     }
     // network request finished, send msg for update ui
     Update();
+    float income = 0.0f;
+    float sum = 0.0f;
+    for (auto &fund : funds_) {
+        income += fund.income;
+        sum += fund.share * fund.valuation;
+    }
+    Msg msg;
+    msg.msg_type = kUpdateIncome;
+    msg.lparam = reinterpret_cast<void *>((*reinterpret_cast<int32_t *>(&income)));
+    msg.rparam = reinterpret_cast<void *>((*reinterpret_cast<int32_t *>(&sum)));
+    PostMsg(msg);
 }
 
 bool FundBoard::UpdateFund(const Fund& fund) {
@@ -267,27 +281,36 @@ bool FundBoard::Serialize() {
     }
     writer.EndArray();
     fclose(fp);
+    UPDATE_STATUS("保存配置文件完成");
     return true;
 }
 
 bool FundBoard::MessageProc(const Msg &msg) {
+    bool processed = false;
     switch(msg.msg_type) {
         case kUpdateFund: {
-            Fund *fund = reinterpret_cast<Fund *>(msg.data);
+            Fund *fund = reinterpret_cast<Fund *>(msg.lparam);
             // update fund fail
+            UPDATE_STATUS("添加基金: %s", fund->fund_code.c_str());
             UpdateFund(*fund);
             delete fund;
+            processed = true;
             break;
         }
         case kDeleteFund: {
-            std::string *fund_code = reinterpret_cast<std::string*>(msg.data);
+            std::string *fund_code = reinterpret_cast<std::string*>(msg.lparam);
+            UPDATE_STATUS("删除基金: %s", fund_code->c_str());
             DeleteFund(*fund_code);
             delete fund_code;
-        }
-        default:
+            processed = true;
             break;
+        }
+        default: {
+            processed = Window::MessageProc(msg);
+            break;
+        }
     }
-    return Window::MessageProc(msg);
+    return processed;
 }
 
 } // namespace BigMoney

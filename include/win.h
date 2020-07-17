@@ -14,7 +14,7 @@ public:
     }
     bool MessageProc(const Msg &msg) override {
         if (msg.msg_type == kPaint) {
-            if (static_cast<Window*>(msg.data) == this) {
+            if (static_cast<Window*>(msg.lparam) == this) {
                 Paint();
                 return true;
             }

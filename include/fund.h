@@ -10,6 +10,7 @@ struct Fund {
     float valuation{0.0f};
     float fluctuations{0.0f};
     float share{0.0f};
+    float income{0.0f};
     std::string fund_name;
     std::string last_update_time;
 };
