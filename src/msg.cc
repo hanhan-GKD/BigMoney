@@ -27,11 +27,11 @@ bool MsgQueue::Empty() {
 }
 
 MsgReactor::MsgReactor() {
-    MsgManager::instance()->AddReactor(this);
+    MsgManager::instance().AddReactor(this);
 }
 
 MsgReactor::~MsgReactor() {
-    MsgManager::instance()->RemoveReactor(this);
+    MsgManager::instance().RemoveReactor(this);
 }
 
 void MsgManager::AddReactor(MsgReactor *reactor) {
@@ -45,14 +45,14 @@ void MsgManager::RemoveReactor(MsgReactor *reactor) {
 }
 
 bool GetMsg(Msg *msg) {
-    if (MsgManager::instance()->QueueEmpty()) {
+    if (MsgManager::instance().QueueEmpty()) {
         return false;
     }
-    return MsgManager::instance()->Dequeue(msg);
+    return MsgManager::instance().Dequeue(msg);
 }
 
 bool PostMsg(const Msg &msg) {
-    return MsgManager::instance()->Enqueue(msg);
+    return MsgManager::instance().Enqueue(msg);
 }
 
 void MsgManager::StartMainLoop() {
@@ -78,6 +78,7 @@ void MsgManager::StartMainLoop() {
 
 void StartMainLoop() {
     StartTimerLoop();
-    MsgManager::instance()->StartMainLoop();
+    MsgManager msn;
+    MsgManager::instance().StartMainLoop();
 }
 } // namespace BigMoney

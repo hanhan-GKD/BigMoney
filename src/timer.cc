@@ -9,7 +9,7 @@ namespace BigMoney {
 
 Timer::Timer(const TimeoutCallback &callback) 
     : callback_(callback){
-        TimerManager::instance()->AddTimer(this);
+        TimerManager::instance().AddTimer(this);
 }
 void Timer::Start(uint32_t milliseconds) {
     running_ = true;
@@ -21,7 +21,7 @@ void Timer::Stop() {
 }
 
 Timer::~Timer() {
-    TimerManager::instance()->RemoveTimer(this);
+    TimerManager::instance().RemoveTimer(this);
 }
 
 void TimerManager::AddTimer(Timer *timer) {
@@ -68,7 +68,7 @@ bool TimerManager::MessageProc(const Msg &msg) {
 }
 
 void StartTimerLoop() {
-    TimerManager::instance()->StartWork();
+    TimerManager::instance().StartWork();
 }
     
 } // namespace BigMoney

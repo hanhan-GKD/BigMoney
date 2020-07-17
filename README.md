@@ -3,21 +3,20 @@
 ![sample](./1594979779.jpg)
 ### 编译
 
-```
-git clone https://github.com/geniusC/BigMoney.git 
-cd big_money
-git submodule init 
-git submoduel udpate
-mkdir build
-cd build
-cmake ../BigMoney
+``` sh
+git clone https://github.com/hanhan-GKD/BigMoney.git
+cd BigMoney
+git submodule init && git submodule udpate
+cd ../ && mkdir build
+cd build && cmake ../BigMoney
+make -j16
 ```
 
 ### 使用
 ```
-1. 增加
+1. 添加/更新基金 
 update <基金编号> <持有份额>
-2. 删除
+2. 删除基金
 delete <基金编号>
 ```
 
