@@ -3,7 +3,10 @@
 ### 编译
 
 ```
-git clone https://github.com/geniusC/BigMoney.git
+git clone https://github.com/geniusC/BigMoney.git 
+cd big_money
+git submodule init 
+git submoduel udpate
 mkdir build
 cd build
 cmake ../BigMoney
