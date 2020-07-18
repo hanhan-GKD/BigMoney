@@ -19,8 +19,10 @@ update <基金编号> <持有份额>
 delete <基金编号>
 3. 退出程序
 quit
+4. 帮助
+help
 ```
-
+ 
 ### 适配
 
 - [x] Windows
