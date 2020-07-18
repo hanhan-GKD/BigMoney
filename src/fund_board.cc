@@ -83,7 +83,8 @@ FundBoard::~FundBoard() {
 void FundBoard::GetFundData() {
     for (auto &fund : funds_) {
         UPDATE_STATUS("请求基金数据: %s", fund.fund_code.c_str());
-        auto http_response = std::make_unique<std::string>();
+        auto resp_buf = new std::string();
+        auto http_response = std::unique_ptr<std::string>(resp_buf);
         std::string url = GenerateFundUrl(fund.fund_code);
         curl_easy_setopt(curl_, CURLOPT_URL, url.c_str());
         curl_easy_setopt(curl_, 
