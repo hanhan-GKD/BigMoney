@@ -7,7 +7,7 @@
     do {\
         auto *buf = new std::vector<char>(255);\
         snprintf(buf->data(), buf->size(), (format), ##__VA_ARGS__);\
-        PostMsg({kUpdateStatus, buf});\
+        PostMsg({MsgType::kUpdateStatus, buf});\
     }while(0)
 
 

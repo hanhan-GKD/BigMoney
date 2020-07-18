@@ -19,7 +19,14 @@ public:
                 return true;
             }
         }
+        else if (msg.msg_type == kHiddenPop) {
+            Update();
+            return false;
+        }
         return false;
+    }
+    void UpdateNow() {
+        Paint();
     }
     void Update() {
         Msg msg{kPaint, static_cast<void*>(this), 0};

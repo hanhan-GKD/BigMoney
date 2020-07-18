@@ -47,15 +47,18 @@ void CommandBar::ParseCommand(const std::string &cmd) {
     } else if (action == "delete") {
         std::string *fund_id = new std::string();
         is >> *fund_id;
-        if (IsNumber(fund_id->c_str())) {
+        if (IsNumber(fund_id->c_str()) || *fund_id == "all") {
             Msg msg{kDeleteFund, fund_id};
             PostMsg(msg);
         }
-    } else if (action == "info") {
+    } else if (action == "help") {
+        PostMsg({ kShowHelp });
+    } else if (action == "q") {
+        PostMsg({ kHiddenPop });
     } else if (action == "quit") {
         Msg msg = {kQuit, nullptr};
-        is_listen_ = false;
-        PostMsg(msg);
+		is_listen_ = false;
+		PostMsg(msg);
     } else {
         UPDATE_STATUS("无效命令: %s", cmd.c_str());
     }

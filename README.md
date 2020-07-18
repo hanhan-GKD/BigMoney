@@ -6,7 +6,6 @@
 ``` sh
 git clone https://github.com/hanhan-GKD/BigMoney.git
 cd BigMoney
-git submodule init && git submodule udpate
 cd ../ && mkdir build
 cd build && cmake ../BigMoney
 make -j16
@@ -18,6 +17,8 @@ make -j16
 update <基金编号> <持有份额>
 2. 删除基金
 delete <基金编号>
+3. 退出程序
+quit
 ```
 
 ### 适配

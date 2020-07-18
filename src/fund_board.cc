@@ -8,6 +8,7 @@
 #include "util.h"
 #include "timer.h"
 #include "colors.h"
+#include <memory>
 
 using namespace rapidjson;
 namespace BigMoney {
@@ -27,8 +28,12 @@ const std::array<std::pair<std::string, int>, 8> FundBoard::FIELD_WIDTH_MAP = {
 size_t FundBoard::WriteFunction(void *data, size_t size, size_t bytes, void *user_data) {
     size_t all_bytes = size * bytes;
     std::string *str = reinterpret_cast<std::string*>(user_data);
-    str->append(static_cast<char*>(data), all_bytes);
-    return all_bytes;
+    if (str->max_size() > str->size() + all_bytes) {
+        str->append(static_cast<char*>(data), all_bytes);
+        return all_bytes;
+    } else {
+        return 0;
+    }
 }
 
 FundBoard::FundBoard(int x, int y, int startx, int starty)
@@ -37,7 +42,7 @@ FundBoard::FundBoard(int x, int y, int startx, int starty)
     curl_ = curl_easy_init();
     LoadFundFromFile();
     timer = new Timer(std::bind(&FundBoard::GetFundData, this));
-    timer->Start(30000);
+    timer->Start(60000);
 }
 void FundBoard::LoadFundFromFile() {
     FILE *fp = fopen("fund.json", "rb");
@@ -77,24 +82,33 @@ FundBoard::~FundBoard() {
 
 void FundBoard::GetFundData() {
     for (auto &fund : funds_) {
-        std::string http_response;
+        UPDATE_STATUS("请求基金数据: %s", fund.fund_code.c_str());
+        auto http_response = std::make_unique<std::string>();
         std::string url = GenerateFundUrl(fund.fund_code);
         curl_easy_setopt(curl_, CURLOPT_URL, url.c_str());
-        curl_easy_setopt(curl_, CURLOPT_WRITEFUNCTION, FundBoard::WriteFunction);
-        curl_easy_setopt(curl_, CURLOPT_WRITEDATA, static_cast<void*>(&http_response));
+        curl_easy_setopt(curl_, 
+            CURLOPT_WRITEFUNCTION, FundBoard::WriteFunction);
+        curl_easy_setopt(curl_, 
+            CURLOPT_WRITEDATA, 
+            static_cast<void*>(http_response.get()));
         auto curl_code = curl_easy_perform(curl_);
         if (curl_code == CURLE_OK) {
-            if (http_response.empty()) {
+            if (http_response->empty()) {
                 // empty resposne
                 UPDATE_STATUS("请求失败, 基金: %s", fund.fund_code.c_str());
                 continue;
             } else {
                 Document doc;
                 // remove garbage char 
-                
-                http_response[http_response.find_last_of(")")]= 0;
-                size_t begin_offset = http_response.find("{");
-                if(doc.Parse(http_response.c_str() + begin_offset).HasParseError()) {
+                size_t begin_offset = http_response->find("{");
+                size_t end_offset = http_response->find_last_of(")");
+                if (begin_offset == http_response->npos || 
+					end_offset == http_response->npos) {
+                    UPDATE_STATUS("基金数据格式错误, 基金: %s", fund.fund_code.c_str());
+                    continue;
+                }
+                http_response->at(end_offset)= 0;
+                if(doc.Parse(http_response->c_str() + begin_offset).HasParseError()) {
                     UPDATE_STATUS("解析数据失败, 基金: %s", fund.fund_code.c_str());
                     continue;
                 }
@@ -104,7 +118,7 @@ void FundBoard::GetFundData() {
                 std::string fund_code;
                 JSON_GET(String, "fundcode", fund_code, doc);
                 if (fund_code != fund.fund_code) {
-                    UPDATE_STATUS("Reponse fund code mismatch\n");
+                    UPDATE_STATUS("基金编码不匹配\n");
                 }
                 std::string valuation;
                 JSON_GET(String, "gsz", valuation, doc);
@@ -174,14 +188,19 @@ bool FundBoard::UpdateFund(const Fund& fund) {
     return changed;
 }
 
-bool FundBoard::DeleteFund(const std::string &fund_code) {
+bool FundBoard::DeleteFund(const std::string& fund_code) {
     bool changed = false;
     fund_mutex_.lock();
-    for (auto itr = funds_.begin(); itr != funds_.end(); itr ++) {
-        if (itr->fund_code == fund_code) {
-            funds_.erase(itr);
-            changed = true;
-            break;
+    if (fund_code == "all") {
+        funds_.clear();
+		changed = true;
+    } else {
+		for (auto itr = funds_.begin(); itr != funds_.end(); itr++) {
+            if (itr->fund_code == fund_code) {
+                funds_.erase(itr);
+                changed = true;
+                break;
+            }
         }
     }
     fund_mutex_.unlock();

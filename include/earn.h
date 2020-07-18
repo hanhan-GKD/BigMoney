@@ -3,6 +3,7 @@
 #include "fund_board.h"
 #include "status_bar.h"
 #include "command_bar.h"
+#include "help.h"
 
 namespace BigMoney {
 
@@ -12,6 +13,7 @@ public:
     ~Earn();
 private:
     FundBoard *fund_board_{nullptr};
+    HelpWindow* help_windows_{nullptr};
     StatusBar *status_bar_{nullptr};
     CommandBar *command_bar_{nullptr};
 };

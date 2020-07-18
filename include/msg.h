@@ -1,4 +1,5 @@
 #pragma once
+
 #include <stdint.h>
 #include <queue>
 #include <memory>
@@ -14,6 +15,8 @@ enum MsgType {
     kUpdateIncome,
     kUpdateStatus,
     kPaint,
+    kShowHelp,
+    kHiddenPop,
     kQuit,
 };
 
