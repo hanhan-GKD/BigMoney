@@ -55,8 +55,11 @@ void FundBoard::LoadFundFromFile() {
 
     // load fund json file fail
     if(doc.ParseStream(is).HasParseError() || !doc.IsArray()) {
+        UPDATE_STATUS("解析基金配置文件失败");
         return;
     };
+    fund_mutex_.lock();
+    funds_.clear();
     for(auto fund_itr = doc.Begin(); fund_itr != doc.End(); fund_itr ++) {
         Fund fund;
         JSON_GET(String, "fund_code", fund.fund_code, fund_itr->GetObject());
@@ -65,6 +68,8 @@ void FundBoard::LoadFundFromFile() {
         JSON_GET(Double, "fund_share", fund.share, fund_itr->GetObject());
         funds_.push_back(fund);
     }
+    fund_mutex_.unlock();
+    fclose(fp);
     GetFundData();
 }
 
@@ -81,6 +86,7 @@ FundBoard::~FundBoard() {
 }
 
 void FundBoard::GetFundData() {
+    std::lock_guard<std::mutex> lock(fund_mutex_);
     for (auto &fund : funds_) {
         UPDATE_STATUS("请求基金数据: %s", fund.fund_code.c_str());
         auto resp_buf = new std::string();
@@ -285,8 +291,8 @@ bool FundBoard::Serialize() {
     std::array<char, 65535> write_buffer;
     FileWriteStream ws(fp, write_buffer.data(), write_buffer.size());
     PrettyWriter<FileWriteStream> writer(ws);
-    writer.StartArray();
     std::lock_guard<std::mutex> lock(fund_mutex_);
+    writer.StartArray();
     for (auto &fund : funds_) {
         writer.StartObject();
         writer.Key("fund_code");
@@ -322,6 +328,12 @@ bool FundBoard::MessageProc(const Msg &msg) {
             UPDATE_STATUS("删除基金: %s", fund_code->c_str());
             DeleteFund(*fund_code);
             delete fund_code;
+            processed = true;
+            break;
+        }
+        case kReloadFile: {
+            UPDATE_STATUS("重新加载配置文件");
+            LoadFundFromFile();
             processed = true;
             break;
         }

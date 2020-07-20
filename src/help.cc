@@ -4,11 +4,12 @@
 
 namespace BigMoney {
 
-static const std::array<const char*, 7> HELP_INFO = {
+static const std::array<const char*, 8> HELP_INFO = {
 								"使用方法:",
 								"\t添加/修改基金: \t\tupdate <基金编号> <持有份额>",
 								"\t删除基金: \t\tdelete <基金编号>",
 								"\t删除全部: \t\tdelete all",
+								"\t重新加载: \t\treload",
 								"\t关闭: \t\t\tq",
 								"\t退出程序: \t\tquit",
 								"\t帮助: \t\t\thelp"

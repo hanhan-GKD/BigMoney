@@ -51,6 +51,8 @@ void CommandBar::ParseCommand(const std::string &cmd) {
             Msg msg{kDeleteFund, fund_id};
             PostMsg(msg);
         }
+    } else if (action == "reload") {
+        PostMsg({kReloadFile});
     } else if (action == "help") {
         PostMsg({ kShowHelp });
     } else if (action == "q") {

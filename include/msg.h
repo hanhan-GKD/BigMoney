@@ -17,6 +17,7 @@ enum MsgType {
     kPaint,
     kShowHelp,
     kHiddenPop,
+    kReloadFile,
     kQuit,
 };
 
