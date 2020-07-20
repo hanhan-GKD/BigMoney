@@ -5,6 +5,10 @@ namespace BigMoney {
 
 Earn::Earn() {
     setlocale(LC_ALL, "");
+#ifdef __APPLE__
+    setenv("TERM", "xterm-basic", 1);
+    setenv("TERMINFO", "/usr/share/terminfo", 1);
+#endif
 	initscr();			
 	raw();				
 	keypad(stdscr, TRUE);		
