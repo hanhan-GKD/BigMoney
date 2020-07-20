@@ -27,6 +27,6 @@ help
 
 - [x] Windows
 - [x] linux
-- [ ] MacOs
+- [x] MacOs
 
 ###  祝大家早日发财
