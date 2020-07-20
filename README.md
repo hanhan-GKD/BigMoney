@@ -5,9 +5,8 @@
 
 ``` sh
 git clone https://github.com/hanhan-GKD/BigMoney.git
-cd BigMoney
-cd ../ && mkdir build
-cd build && cmake ../BigMoney
+mkdir build && cd build 
+cmake ../BigMoney
 make -j16
 ```
 
