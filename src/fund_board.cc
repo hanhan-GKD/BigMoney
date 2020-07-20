@@ -246,6 +246,10 @@ void FundBoard::Paint() {
         x_offset += field.second + 2;
     }
     mvwhline(win_, ++y_offset, 0, '-', x_);
+#ifdef _WIN32
+    // refresh on windows for pdcurses bug(workaround)
+    wrefresh(win_);
+#endif // _WIN32
     // compute float value format
     std::array<std::string, 5> format_table;
     std::array<char, 30> format_buffer;
