@@ -29,7 +29,7 @@ int StringWidth(const std::string &str) {
 
 int FloatWidth(float f) {
     std::array<char, 255> format_buf;
-    snprintf(format_buf.data(), format_buf.size(), "%.2f", f);
+    snprintf(format_buf.data(), format_buf.size(), "%.3f", f);
     return strlen(format_buf.data());
 }
 

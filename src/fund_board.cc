@@ -14,12 +14,13 @@ using namespace rapidjson;
 namespace BigMoney {
 
 // compute content 
-const std::array<std::pair<std::string, int>, 8> FundBoard::FIELD_WIDTH_MAP = {
+const std::array<std::pair<std::string, int>, 9> FundBoard::FIELD_WIDTH_MAP = {
         std::make_pair("编号", StringWidth("编号")),
         std::make_pair("名称", StringWidth("名称")),
         std::make_pair("净值", StringWidth("净值")),
         std::make_pair("估值", StringWidth("估值")),
-        std::make_pair("份额", StringWidth("份额")),
+        std::make_pair("持有份额", StringWidth("持有份额")),
+        std::make_pair("估算总值", StringWidth("估算总值")),
         std::make_pair("增长率", StringWidth("增长率")),
         std::make_pair("预计收益", StringWidth("预计收益")),
         std::make_pair("更新时间", StringWidth("更新时间"))
@@ -140,10 +141,15 @@ void FundBoard::GetFundData() {
                 fund.fund_worth = std::atof(dwjz.c_str());
                 if (fund.share > 0) {
                     fund.income = fund.share * (fund.valuation - fund.fund_worth);
+                    fund.sum = fund.share * fund.valuation;
                 }
 
                 JSON_GET(String, "name", fund.fund_name, doc);
                 JSON_GET(String, "gztime", fund.last_update_time, doc);
+                auto date_offset = fund.last_update_time.find_first_of("-");
+                if (date_offset != std::string::npos) {
+                    fund.last_update_time = fund.last_update_time.substr(date_offset + 1);
+                }
 
             }
         } else {
@@ -234,12 +240,14 @@ void FundBoard::Paint() {
         field_width_map[3].second = std::max(field_width_map[3].second, width);
         width = FloatWidth(fund.share);
         field_width_map[4].second = std::max(field_width_map[4].second, width);
-        width = FloatWidth(fund.fluctuations);
+        width = FloatWidth(fund.sum);
         field_width_map[5].second = std::max(field_width_map[5].second, width);
-        width = FloatWidth(fund.share * (fund.valuation - fund.fund_worth) * 1.0);
+        width = FloatWidth(fund.fluctuations);
         field_width_map[6].second = std::max(field_width_map[6].second, width);
-        width = StringWidth(fund.last_update_time);
+        width = FloatWidth(fund.income);
         field_width_map[7].second = std::max(field_width_map[7].second, width);
+        width = StringWidth(fund.last_update_time);
+        field_width_map[8].second = std::max(field_width_map[8].second, width);
     }
     for (auto &field : field_width_map) {
         mvwprintw(win_, 0, x_offset, _TEXT(field.first.c_str()));
@@ -251,11 +259,11 @@ void FundBoard::Paint() {
     wrefresh(win_);
 #endif // _WIN32
     // compute float value format
-    std::array<std::string, 5> format_table;
+    std::array<std::string, 6> format_table;
     std::array<char, 30> format_buffer;
-    for (size_t i = 2, j = 0; i < 7; i ++, j ++) {
+    for (size_t i = 2, j = 0; i < 8; i ++, j ++) {
         memset(format_buffer.data(), 0, format_buffer.size());
-        snprintf(format_buffer.data(), format_buffer.size(), "%%%d.2f", field_width_map[i].second);
+        snprintf(format_buffer.data(), format_buffer.size(), "%%%d.3f", field_width_map[i].second);
         format_table[j] = std::string(format_buffer.data());
     }
     for(auto &fund: funds_) {
@@ -276,10 +284,12 @@ void FundBoard::Paint() {
         } else if (fund.fluctuations < 0){
             wattron(win_, GetColorPair(kGreenBlack));
         }
-        mvwprintw(win_, y_offset, x_offset, format_table[3].c_str(), fund.fluctuations);
+        mvwprintw(win_, y_offset, x_offset, format_table[3].c_str(), fund.sum);
         x_offset += field_width_map[5].second + 2;
-        mvwprintw(win_, y_offset, x_offset, format_table[4].c_str(), fund.share * (fund.valuation - fund.fund_worth));
+        mvwprintw(win_, y_offset, x_offset, format_table[4].c_str(), fund.fluctuations);
         x_offset += field_width_map[6].second + 2;
+        mvwprintw(win_, y_offset, x_offset, format_table[5].c_str(), fund.income);
+        x_offset += field_width_map[7].second + 2;
         if (fund.fluctuations > 0) {
             wattroff(win_, GetColorPair(kRedBlack));
         } else if(fund.fluctuations < 0){
