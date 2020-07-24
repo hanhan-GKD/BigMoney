@@ -6,7 +6,7 @@
 using namespace BigMoney;
 
 int main() {
-	Earn earn;
-	StartMainLoop();
-	return 0;
+  Earn earn;
+  StartMainLoop();
+  return 0;
 }

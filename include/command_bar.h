@@ -9,15 +9,15 @@ namespace BigMoney {
 
 class CommandBar : public Window{
 public:
-    CommandBar(int x, int y, int startx, int starty);
-    void GetCommand();
-    ~CommandBar();
+  CommandBar(int x, int y, int startx, int starty);
+  void GetCommand();
+  ~CommandBar();
 
 private:
-    void ParseCommand(const std::string &cmd);
+  void ParseCommand(const std::string &cmd);
 private:
-    std::thread *listen_thread_{nullptr};
-    bool is_listen_{false};
+  std::thread *listen_thread_{nullptr};
+  bool is_listen_{false};
 };
 
 } // namespace BigMoney

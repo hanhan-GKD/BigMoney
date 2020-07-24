@@ -9,13 +9,13 @@ namespace BigMoney {
 
 class Earn {
 public:
-    Earn();
-    ~Earn();
+  Earn();
+  ~Earn();
 private:
-    FundBoard *fund_board_{nullptr};
-    HelpWindow* help_windows_{nullptr};
-    StatusBar *status_bar_{nullptr};
-    CommandBar *command_bar_{nullptr};
+  FundBoard *fund_board_{nullptr};
+  HelpWindow* help_windows_{nullptr};
+  StatusBar *status_bar_{nullptr};
+  CommandBar *command_bar_{nullptr};
 };
 
 } // namespace BigMoney
