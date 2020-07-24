@@ -12,6 +12,7 @@
 #include <ctime>
 #include <unordered_map>
 #include <numeric>
+#include <cmath>
 
 using namespace rapidjson;
 namespace BigMoney {

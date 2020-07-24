@@ -15,7 +15,7 @@ public:
   bool MessageProc(const Msg &msg) override;
 private:
   std::string show_msg_;
-  FundIncome fund_income_{0.0f, 0.0f, 0.0f};
+  FundIncome fund_income_;
   Timer *timer_{nullptr};
   std::atomic<bool> update_{false};
   std::mutex msg_mutex_;
