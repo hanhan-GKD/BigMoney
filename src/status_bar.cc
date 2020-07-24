@@ -34,8 +34,8 @@ void StatusBar::Paint() {
   wprintw(win_, _TEXT(show_msg_.c_str()));
   msg_mutex_.unlock();
   snprintf(output_buf.data(), output_buf.size(),
-           " 估算收益: %.2f 实际收益: %.2f 估算总值: %.2f ",
-           fund_income_.income, fund_income_.read_income, fund_income_.sum);
+           " 估算收益: %.2f  估算总值: %.2f ",
+           fund_income_.income, fund_income_.sum);
   int width = StringWidth(output_buf.data());
   mvwprintw(win_, 0, x_ - width, _TEXT(output_buf.data()));
   wrefresh(win_);

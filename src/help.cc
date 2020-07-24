@@ -17,7 +17,6 @@ static const std::array<const char*, 10> HELP_INFO = {
   "\t帮助: \t\t\thelp"
 };
 
-static const char* GITHUB = "GitHub:\thttps://github.com/hanhan-GKD/BigMoney";
 
 HelpWindow::HelpWindow(int x, int y, int startx, int starty)
   :Window(x, y, startx, starty){
@@ -47,7 +46,8 @@ void HelpWindow::Paint() {
       mvwprintw(win_, y_offset, 1, _TEXT(item));
       y_offset++;
     }
-    mvwprintw(win_, y_ - 2, 1, _TEXT(GITHUB));
+    mvwprintw(win_, y_ - 3, 1, GITHUB);
+    mvwprintw(win_, y_ - 2, 1, "Version: %s", BIG_MONEY_VERSION);
   }
   wrefresh(win_);
 }

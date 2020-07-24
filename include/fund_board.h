@@ -25,7 +25,7 @@ private:
   bool DeleteFund(const std::string &fund_code);
   bool Serialize();
 private:
-  const static std::array<std::pair<std::string, int>, 10> FIELD_WIDTH_MAP;
+  const static std::array<std::pair<std::string, int>, 9> FIELD_WIDTH_MAP;
   std::vector<Fund> funds_;
   CURL *curl_{nullptr};
   std::mutex fund_mutex_;

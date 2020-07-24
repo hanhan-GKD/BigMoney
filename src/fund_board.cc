@@ -18,7 +18,7 @@ using namespace rapidjson;
 namespace BigMoney {
 
 // compute content 
-const std::array<std::pair<std::string, int>, 10> FundBoard::FIELD_WIDTH_MAP = {
+const std::array<std::pair<std::string, int>, 9> FundBoard::FIELD_WIDTH_MAP = {
   std::make_pair("编号", StringWidth("编号")),
   std::make_pair("名称", StringWidth("名称")),
   std::make_pair("净值", StringWidth("净值")),
@@ -27,7 +27,6 @@ const std::array<std::pair<std::string, int>, 10> FundBoard::FIELD_WIDTH_MAP = {
   std::make_pair("估算总值", StringWidth("估算总值")),
   std::make_pair("增长率", StringWidth("增长率")),
   std::make_pair("预计收益", StringWidth("预计收益")),
-  std::make_pair("实际收益", StringWidth("实际收益")),
   std::make_pair("更新时间", StringWidth("更新时间"))
 };
 
@@ -180,9 +179,11 @@ void FundBoard::GetFundData() {
     }
   }
 
-  FundIncome *fund_income = new FundIncome();
-  auto now = std::time(nullptr);
-  auto hour = std::localtime(&now)->tm_hour;
+  auto tm = std::time(nullptr);
+  auto now = std::localtime(&tm);
+  auto hour = now->tm_hour;
+  std::array<char, 255> date_str;
+  std::strftime(date_str.data(), date_str.size(), "%Y-%m-%d", now);
   if (hour > 14 && !funds_.empty()) {
     UPDATE_STATUS("计算实际收益...");
     std::string real_income_url = GenerateRealIncomeUrl(funds_);
@@ -193,36 +194,34 @@ void FundBoard::GetFundData() {
     if(curl_easy_perform(curl_) == CURLE_OK) {
       std::istringstream is(http_response->c_str());
       std::string line;
-      std::unordered_map<std::string, float> fund_price_map;
       while (std::getline(is, line)) {
         if (!line.empty()) {
+          if (line.find(date_str.data()) == line.npos) {
+            continue;
+          }
           std::array<char, 64> fund_code;
           float price = 0.0f;
+          float last_price = 0.0f;
           if (sscanf(line.c_str(),
-                     "%*[^0-9]%[0-9]=\"%*[^,],%f",
-                     fund_code.data(), &price) == 2) {
-            fund_price_map[fund_code.data()] = price;
+                     "%*[^0-9]%[0-9]=\"%*[^,],%f,%*f,%f",
+                     fund_code.data(), &price, &last_price) == 3) {
+            for (auto &fund : funds_) {
+              if (fund.fund_code == fund_code.data()) {
+                fund.income = fund.share * (price - last_price);
+                break;
+              }
+            }
           }
         }
       }
-      for (auto &fund : funds_) {
-        auto itr = fund_price_map.find(fund.fund_code);
-        if (itr != fund_price_map.end()) {
-          if (fund.fund_worth != itr->second) {
-            fund.real_income = fund.share * (itr->second - fund.fund_worth);
-          }
-        }
-        fund_income->income += fund.income;
-        fund_income->read_income += fund.real_income;
-        fund_income->sum += fund.share * fund.valuation;
-      }
     }
-  } else {
-    for (auto &fund : funds_) {
-      fund_income->income += fund.income;
-      fund_income->sum += fund.share * fund.valuation;
-    }
+  } 
+  FundIncome *fund_income = new FundIncome();
+  for (auto &fund : funds_) {
+    fund_income->income += fund.income;
+    fund_income->sum += fund.share * fund.valuation;
   }
+  
   // network request finished, send msg for update ui
   Update();
   PostMsg({kUpdateIncome, static_cast<void*>(fund_income), nullptr});
@@ -293,7 +292,8 @@ void FundBoard::Paint() {
   uint32_t end_offset = 0;
   if (page_ < max_page_) {
     end_offset = (page_ + 1) * per_page_;
-  } else if (page_ == max_page_) {
+  } else {
+    page_ = max_page_;
     end_offset = funds_.size();
   }
 
@@ -315,10 +315,8 @@ void FundBoard::Paint() {
     field_width_map[6].second = std::max(field_width_map[6].second, width);
     width = FloatWidth(fund.income, "%.3f");
     field_width_map[7].second = std::max(field_width_map[7].second, width);
-    width = FloatWidth(fund.real_income, "%.3f");
-    field_width_map[8].second = std::max(field_width_map[8].second, width);
     width = StringWidth(fund.last_update_time);
-    field_width_map[9].second = std::max(field_width_map[9].second, width);
+    field_width_map[8].second = std::max(field_width_map[8].second, width);
   }
   for (auto &field : field_width_map) {
     mvwprintw(win_, 0, x_offset, _TEXT(field.first.c_str()));
@@ -332,7 +330,7 @@ void FundBoard::Paint() {
   // compute float value format
   std::array<std::string, 7> format_table;
   std::array<char, 30> format_buffer;
-  for (size_t i = 2, j = 0; i < 9; i ++, j ++) {
+  for (size_t i = 2, j = 0; i < 8; i ++, j ++) {
     memset(format_buffer.data(), 0, format_buffer.size());
     snprintf(format_buffer.data(), format_buffer.size(), "%%%d.3f", field_width_map[i].second);
     format_table[j] = std::string(format_buffer.data());
@@ -361,24 +359,22 @@ void FundBoard::Paint() {
     x_offset += field_width_map[5].second + 2;
     mvwprintw(win_, y_offset, x_offset, format_table[4].c_str(), fund.fluctuations);
     x_offset += field_width_map[6].second + 2;
-    mvwprintw(win_, y_offset, x_offset, format_table[5].c_str(), fund.income);
-    x_offset += field_width_map[7].second + 2;
     if (fund.fluctuations > 0) {
       wattroff(win_, GetColorPair(kRedBlack));
     } else if(fund.fluctuations < 0){
       wattroff(win_, GetColorPair(kGreenBlack));
     }
 
-    if (fund.real_income > 0) {
+    if (fund.income > 0) {
       wattron(win_, GetColorPair(kRedBlack));
-    } else if (fund.real_income< 0){
+    } else if (fund.income < 0){
       wattron(win_, GetColorPair(kGreenBlack));
     }
-    mvwprintw(win_, y_offset, x_offset, format_table[6].c_str(), fund.real_income);
-    x_offset += field_width_map[8].second + 2;
-    if (fund.real_income > 0) {
+    mvwprintw(win_, y_offset, x_offset, format_table[5].c_str(), fund.income);
+    x_offset += field_width_map[7].second + 2;
+    if (fund.income > 0) {
       wattroff(win_, GetColorPair(kRedBlack));
-    } else if(fund.real_income < 0){
+    } else if(fund.income < 0){
       wattroff(win_, GetColorPair(kGreenBlack));
     }
     mvwprintw(win_, y_offset, x_offset, fund.last_update_time.c_str());
@@ -442,7 +438,7 @@ bool FundBoard::MessageProc(const Msg &msg) {
         page_ --;
         Update();
       }
-      UPDATE_STATUS("[%u, %u]", page_ + 1, max_page_ + 1);
+      UPDATE_STATUS("[%u,%u]", page_ + 1, max_page_ + 1);
       processed = true;
       break;
     }
@@ -451,7 +447,7 @@ bool FundBoard::MessageProc(const Msg &msg) {
         page_ ++;
         Update();
       }
-      UPDATE_STATUS("[%u, %u]", page_ + 1, max_page_ + 1);
+      UPDATE_STATUS("[%u,%u]", page_ + 1, max_page_ + 1);
       processed = true;
       break;
     }
