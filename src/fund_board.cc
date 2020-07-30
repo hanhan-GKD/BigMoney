@@ -1,40 +1,43 @@
 #include "fund_board.h"
-#include <rapidjson/rapidjson.h>
+
 #include <rapidjson/document.h>
-#include <rapidjson/filewritestream.h>
 #include <rapidjson/filereadstream.h>
+#include <rapidjson/filewritestream.h>
 #include <rapidjson/prettywriter.h>
+#include <rapidjson/rapidjson.h>
+
 #include <array>
-#include "util.h"
-#include "timer.h"
-#include "colors.h"
-#include <memory>
-#include <ctime>
-#include <unordered_map>
-#include <numeric>
 #include <cmath>
+#include <ctime>
+#include <memory>
+#include <numeric>
+#include <unordered_map>
+
+#include "colors.h"
+#include "timer.h"
+#include "util.h"
 
 using namespace rapidjson;
 namespace BigMoney {
 
-// compute content 
+// compute content
 const std::array<std::pair<std::string, int>, 9> FundBoard::FIELD_WIDTH_MAP = {
-  std::make_pair("编号", StringWidth("编号")),
-  std::make_pair("名称", StringWidth("名称")),
-  std::make_pair("净值", StringWidth("净值")),
-  std::make_pair("估值", StringWidth("估值")),
-  std::make_pair("持有份额", StringWidth("持有份额")),
-  std::make_pair("估算总值", StringWidth("估算总值")),
-  std::make_pair("增长率", StringWidth("增长率")),
-  std::make_pair("预计收益", StringWidth("预计收益")),
-  std::make_pair("更新时间", StringWidth("更新时间"))
-};
+    std::make_pair("编号", StringWidth("编号")),
+    std::make_pair("名称", StringWidth("名称")),
+    std::make_pair("净值", StringWidth("净值")),
+    std::make_pair("估值", StringWidth("估值")),
+    std::make_pair("持有份额", StringWidth("持有份额")),
+    std::make_pair("估算总值", StringWidth("估算总值")),
+    std::make_pair("增长率", StringWidth("增长率")),
+    std::make_pair("预计收益", StringWidth("预计收益")),
+    std::make_pair("更新时间", StringWidth("更新时间"))};
 
-size_t FundBoard::WriteFunction(void *data, size_t size, size_t bytes, void *user_data) {
+size_t FundBoard::WriteFunction(void *data, size_t size, size_t bytes,
+                                void *user_data) {
   size_t all_bytes = size * bytes;
-  std::string *str = reinterpret_cast<std::string*>(user_data);
+  std::string *str = reinterpret_cast<std::string *>(user_data);
   if (str->max_size() > str->size() + all_bytes) {
-    str->append(static_cast<char*>(data), all_bytes);
+    str->append(static_cast<char *>(data), all_bytes);
     return all_bytes;
   } else {
     return 0;
@@ -42,12 +45,12 @@ size_t FundBoard::WriteFunction(void *data, size_t size, size_t bytes, void *use
 }
 
 FundBoard::FundBoard(int x, int y, int startx, int starty)
-  : Window(x, y, startx, starty) {
+    : Window(x, y, startx, starty) {
   // per page display item size
   per_page_ = y - 3;
   curl_global_init(CURL_GLOBAL_DEFAULT);
   curl_ = curl_easy_init();
-  request_thread_ = new std::thread([this]{
+  request_thread_ = new std::thread([this] {
     while (running_) {
       if (request_flag_) {
         GetFundData();
@@ -56,9 +59,7 @@ FundBoard::FundBoard(int x, int y, int startx, int starty)
       std::this_thread::sleep_for(std::chrono::milliseconds(500));
     }
   });
-  timer = new Timer([this]{
-    request_flag_ = true;
-  });
+  timer = new Timer([this] { request_flag_ = true; });
   timer->Start(60000);
   LoadFundFromFile();
 }
@@ -72,18 +73,19 @@ void FundBoard::LoadFundFromFile() {
   FileReadStream is(fp, read_buffer.data(), read_buffer.size());
 
   // load fund json file fail
-  if(doc.ParseStream(is).HasParseError() || !doc.IsArray()) {
+  if (doc.ParseStream(is).HasParseError() || !doc.IsArray()) {
     fclose(fp);
     UPDATE_STATUS("解析基金配置文件失败");
     return;
   };
   fund_mutex_.lock();
   funds_.clear();
-  for(auto fund_itr = doc.Begin(); fund_itr != doc.End(); fund_itr ++) {
+  for (auto fund_itr = doc.Begin(); fund_itr != doc.End(); fund_itr++) {
     Fund fund;
     JSON_GET(String, "fund_code", fund.fund_code, fund_itr->GetObject());
     JSON_GET(String, "fund_name", fund.fund_name, fund_itr->GetObject());
-    JSON_GET(String, "fund_last_update", fund.last_update_time, fund_itr->GetObject());
+    JSON_GET(String, "fund_last_update", fund.last_update_time,
+             fund_itr->GetObject());
     JSON_GET(Double, "fund_share", fund.share, fund_itr->GetObject());
     funds_.push_back(fund);
   }
@@ -93,7 +95,7 @@ void FundBoard::LoadFundFromFile() {
 }
 
 FundBoard::~FundBoard() {
-  if(request_thread_) {
+  if (request_thread_) {
     request_thread_->join();
     delete request_thread_;
   }
@@ -116,11 +118,9 @@ void FundBoard::GetFundData() {
     auto http_response = std::unique_ptr<std::string>(resp_buf);
     std::string url = GenerateFundUrl(fund.fund_code);
     curl_easy_setopt(curl_, CURLOPT_URL, url.c_str());
-    curl_easy_setopt(curl_,
-                     CURLOPT_WRITEFUNCTION, FundBoard::WriteFunction);
-    curl_easy_setopt(curl_,
-                     CURLOPT_WRITEDATA,
-                     static_cast<void*>(http_response.get()));
+    curl_easy_setopt(curl_, CURLOPT_WRITEFUNCTION, FundBoard::WriteFunction);
+    curl_easy_setopt(curl_, CURLOPT_WRITEDATA,
+                     static_cast<void *>(http_response.get()));
     auto curl_code = curl_easy_perform(curl_);
     if (curl_code == CURLE_OK) {
       if (http_response->empty()) {
@@ -137,8 +137,8 @@ void FundBoard::GetFundData() {
           UPDATE_STATUS("基金数据格式错误, 基金: %s", fund.fund_code.c_str());
           continue;
         }
-        http_response->at(end_offset)= 0;
-        if(doc.Parse(http_response->c_str() + begin_offset).HasParseError()) {
+        http_response->at(end_offset) = 0;
+        if (doc.Parse(http_response->c_str() + begin_offset).HasParseError()) {
           UPDATE_STATUS("解析数据失败, 基金: %s", fund.fund_code.c_str());
           continue;
         }
@@ -172,7 +172,6 @@ void FundBoard::GetFundData() {
         if (date_offset != std::string::npos) {
           fund.last_update_time = fund.last_update_time.substr(date_offset + 1);
         }
-
       }
     } else {
       UPDATE_STATUS("网络请求出现错误");
@@ -191,7 +190,7 @@ void FundBoard::GetFundData() {
     auto http_response = std::unique_ptr<std::string>(resp_buf);
     curl_easy_setopt(curl_, CURLOPT_URL, real_income_url.c_str());
     curl_easy_setopt(curl_, CURLOPT_WRITEDATA, http_response.get());
-    if(curl_easy_perform(curl_) == CURLE_OK) {
+    if (curl_easy_perform(curl_) == CURLE_OK) {
       std::istringstream is(http_response->c_str());
       std::string line;
       while (std::getline(is, line)) {
@@ -202,8 +201,7 @@ void FundBoard::GetFundData() {
           std::array<char, 64> fund_code;
           float price = 0.0f;
           float last_price = 0.0f;
-          if (sscanf(line.c_str(),
-                     "%*[^0-9]%[0-9]=\"%*[^,],%f,%*f,%f",
+          if (sscanf(line.c_str(), "%*[^0-9]%[0-9]=\"%*[^,],%f,%*f,%f",
                      fund_code.data(), &price, &last_price) == 3) {
             for (auto &fund : funds_) {
               if (fund.fund_code == fund_code.data()) {
@@ -215,32 +213,32 @@ void FundBoard::GetFundData() {
         }
       }
     }
-  } 
+  }
   FundIncome *fund_income = new FundIncome();
   for (auto &fund : funds_) {
     fund_income->income += fund.income;
     fund_income->sum += fund.share * fund.valuation;
   }
-  
+
   // network request finished, send msg for update ui
   Update();
-  PostMsg({kUpdateIncome, static_cast<void*>(fund_income), nullptr});
+  PostMsg({kUpdateIncome, static_cast<void *>(fund_income), nullptr});
 }
 
-bool FundBoard::UpdateFund(const Fund& fund) {
+bool FundBoard::UpdateFund(const Fund &fund) {
   bool changed = false;
   if (fund.fund_code.empty()) {
     return changed;
   }
   fund_mutex_.lock();
   auto itr = funds_.begin();
-  while(itr != funds_.end()) {
+  while (itr != funds_.end()) {
     if (itr->fund_code == fund.fund_code) {
       *itr = fund;
       changed = true;
       break;
     }
-    itr ++;
+    itr++;
   }
   // new fund
   if (itr == funds_.end()) {
@@ -257,7 +255,7 @@ bool FundBoard::UpdateFund(const Fund& fund) {
   return changed;
 }
 
-bool FundBoard::DeleteFund(const std::string& fund_code) {
+bool FundBoard::DeleteFund(const std::string &fund_code) {
   bool changed = false;
   fund_mutex_.lock();
   if (fund_code == "all") {
@@ -286,7 +284,12 @@ void FundBoard::Paint() {
   auto field_width_map = FIELD_WIDTH_MAP;
 
   std::lock_guard<std::mutex> lock(fund_mutex_);
-  max_page_ = static_cast<uint32_t>(ceil(1.0f * funds_.size() / per_page_)) - 1;
+  if (funds_.size() > 0) {
+    max_page_ =
+        static_cast<uint32_t>(ceil(1.0f * funds_.size() / per_page_)) - 1;
+  } else {
+    max_page_ = 0;
+  }
 
   uint32_t start_offset = page_ * per_page_;
   uint32_t end_offset = 0;
@@ -297,7 +300,7 @@ void FundBoard::Paint() {
     end_offset = funds_.size();
   }
 
-  for(auto index = start_offset; index < end_offset; index ++){
+  for (auto index = start_offset; index < end_offset; index++) {
     auto &fund = funds_[index];
     int width = StringWidth(fund.fund_code);
     field_width_map[0].second = std::max(field_width_map[0].second, width);
@@ -326,55 +329,59 @@ void FundBoard::Paint() {
 #ifdef _WIN32
   // refresh on windows for pdcurses bug(workaround)
   wrefresh(win_);
-#endif // _WIN32
+#endif  // _WIN32
   // compute float value format
   std::array<std::string, 7> format_table;
   std::array<char, 30> format_buffer;
-  for (size_t i = 2, j = 0; i < 8; i ++, j ++) {
+  for (size_t i = 2, j = 0; i < 8; i++, j++) {
     memset(format_buffer.data(), 0, format_buffer.size());
-    snprintf(format_buffer.data(), format_buffer.size(), "%%%d.3f", field_width_map[i].second);
+    snprintf(format_buffer.data(), format_buffer.size(), "%%%d.3f",
+             field_width_map[i].second);
     format_table[j] = std::string(format_buffer.data());
   }
 
-  for(auto index = start_offset; index < end_offset; index ++){
+  for (auto index = start_offset; index < end_offset; index++) {
     auto &fund = funds_[index];
     x_offset = 0;
-    y_offset ++;
+    y_offset++;
     mvwprintw(win_, y_offset, x_offset, fund.fund_code.c_str());
     x_offset += field_width_map[0].second + 2;
     mvwprintw(win_, y_offset, x_offset, _TEXT(fund.fund_name.c_str()));
     x_offset += field_width_map[1].second + 2;
-    mvwprintw(win_, y_offset, x_offset, format_table[0].c_str(), fund.fund_worth);
+    mvwprintw(win_, y_offset, x_offset, format_table[0].c_str(),
+              fund.fund_worth);
     x_offset += field_width_map[2].second + 2;
-    mvwprintw(win_, y_offset, x_offset, format_table[1].c_str(), fund.valuation);
+    mvwprintw(win_, y_offset, x_offset, format_table[1].c_str(),
+              fund.valuation);
     x_offset += field_width_map[3].second + 2;
     mvwprintw(win_, y_offset, x_offset, format_table[2].c_str(), fund.share);
     x_offset += field_width_map[4].second + 2;
     if (fund.fluctuations > 0) {
       wattron(win_, GetColorPair(kRedBlack));
-    } else if (fund.fluctuations < 0){
+    } else if (fund.fluctuations < 0) {
       wattron(win_, GetColorPair(kGreenBlack));
     }
     mvwprintw(win_, y_offset, x_offset, format_table[3].c_str(), fund.sum);
     x_offset += field_width_map[5].second + 2;
-    mvwprintw(win_, y_offset, x_offset, format_table[4].c_str(), fund.fluctuations);
+    mvwprintw(win_, y_offset, x_offset, format_table[4].c_str(),
+              fund.fluctuations);
     x_offset += field_width_map[6].second + 2;
     if (fund.fluctuations > 0) {
       wattroff(win_, GetColorPair(kRedBlack));
-    } else if(fund.fluctuations < 0){
+    } else if (fund.fluctuations < 0) {
       wattroff(win_, GetColorPair(kGreenBlack));
     }
 
     if (fund.income > 0) {
       wattron(win_, GetColorPair(kRedBlack));
-    } else if (fund.income < 0){
+    } else if (fund.income < 0) {
       wattron(win_, GetColorPair(kGreenBlack));
     }
     mvwprintw(win_, y_offset, x_offset, format_table[5].c_str(), fund.income);
     x_offset += field_width_map[7].second + 2;
     if (fund.income > 0) {
       wattroff(win_, GetColorPair(kRedBlack));
-    } else if(fund.income < 0){
+    } else if (fund.income < 0) {
       wattroff(win_, GetColorPair(kGreenBlack));
     }
     mvwprintw(win_, y_offset, x_offset, fund.last_update_time.c_str());
@@ -409,7 +416,7 @@ bool FundBoard::Serialize() {
 
 bool FundBoard::MessageProc(const Msg &msg) {
   bool processed = false;
-  switch(msg.msg_type) {
+  switch (msg.msg_type) {
     case kUpdateFund: {
       Fund *fund = reinterpret_cast<Fund *>(msg.lparam);
       // update fund fail
@@ -420,7 +427,7 @@ bool FundBoard::MessageProc(const Msg &msg) {
       break;
     }
     case kDeleteFund: {
-      std::string *fund_code = reinterpret_cast<std::string*>(msg.lparam);
+      std::string *fund_code = reinterpret_cast<std::string *>(msg.lparam);
       UPDATE_STATUS("删除基金: %s", fund_code->c_str());
       DeleteFund(*fund_code);
       delete fund_code;
@@ -434,8 +441,8 @@ bool FundBoard::MessageProc(const Msg &msg) {
       break;
     }
     case kPrePage: {
-      if(page_ > 0) {
-        page_ --;
+      if (page_ > 0) {
+        page_--;
         Update();
       }
       UPDATE_STATUS("[%u,%u]", page_ + 1, max_page_ + 1);
@@ -443,8 +450,8 @@ bool FundBoard::MessageProc(const Msg &msg) {
       break;
     }
     case kNextPage: {
-      if(page_ < max_page_) {
-        page_ ++;
+      if (page_ < max_page_) {
+        page_++;
         Update();
       }
       UPDATE_STATUS("[%u,%u]", page_ + 1, max_page_ + 1);
@@ -462,4 +469,4 @@ bool FundBoard::MessageProc(const Msg &msg) {
   return processed;
 }
 
-} // namespace BigMoney
+}  // namespace BigMoney
